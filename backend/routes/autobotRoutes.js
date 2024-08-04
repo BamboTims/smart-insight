@@ -1,27 +1,43 @@
 const express = require("express");
-const { Autobot, Post, Comment } = require("../model");
+const { Autobot, Post, Comment } = require("../models");
 
 const router = express.Router();
 
+const paginate = (model, options) => {
+  const { page = 1, limit = 10 } = options;
+  const offset = (page - 1) * limit;
+
+  return model.findAndCountAll({
+    ...options,
+    limit,
+    offset,
+  });
+};
+
 router.get("/autobots", async (req, res) => {
-  const autobots = await Autobot.findAll({ limit: 10 });
-  res.json(autobots);
+  const { page, limit } = req.query;
+  const { count, rows } = await paginate(Autobot, { page, limit });
+  res.json({ total: count, autobots: rows });
 });
 
 router.get("/autobots/:id/posts", async (req, res) => {
-  const posts = await Post.findAll({
+  const { page, limit } = req.query;
+  const { count, rows } = await paginate(Post, {
     where: { autobot_id: req.params.id },
-    limit: 10,
+    page,
+    limit,
   });
-  res.json(posts);
+  res.json({ total: count, posts: rows });
 });
 
 router.get("/posts/:id/comments", async (req, res) => {
-  const comments = await Comment.findAll({
+  const { page, limit } = req.query;
+  const { count, rows } = await paginate(Comment, {
     where: { post_id: req.params.id },
-    limit: 10,
+    page,
+    limit,
   });
-  res.json(comments);
+  res.json({ total: count, comments: rows });
 });
 
 module.exports = router;
